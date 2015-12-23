@@ -1,0 +1,31 @@
+总结LocalSessionFactoryBean加载Hibernate 映射的几种方式及区别:
+LocalSessionFactoryBean有好几个属性用来查找hibernate映射文件：
+mappingResources、mappingLocations、mappingDirectoryLocations与mappingJarLocations
+
+1、String[] mappingResources：指定classpath下具体映射文件名
+		<property  name="mappingResources"> 
+			<list> 
+				<value>cn/itcast/pss/domain/User.hbm.xml</value> 
+				<value>cn/itcast/pss/domain/Department.hbm.xml</value> 
+			</list> 
+		</property> 
+
+2、Resource[] mappingLocations：可以指定任何文件路径，并且可以指定前缀：classpath、file等
+		<property name="mappingLocations"  value="/WEB-INF/Pojot.hbm.xml"/> 
+		<property name="mappingLocations"  value="classpath:cn/itcast/pss/domain/User.hbm.xml"/>
+		也可以用通配符指定，'*'指定一个文件(路径)名，'**'指定多个文件(路径)名，例如：
+				<property name="mappingLocations">
+					<list>
+						<value>classpath:cn/itcast/pss/domain/*.hbm.xml</value>
+					</list>
+				</property>
+				
+3、Resource[] mappingDirectoryLocations：指定映射的文件路径
+		<property name="mappingDirectoryLocations"> 
+			<list> 
+				<value>/WEB-INF/classes/cz/itcast/pss/domain</value> 
+			</list> 
+		</property>
+		
+4、Resource[] mappingJarLocations：指定加载的映射文件在jar文件
+

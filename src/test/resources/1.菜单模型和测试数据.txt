@@ -1,0 +1,74 @@
+一.权限控制数据在交给用户使用的时候，把所有的资源全部一次性初始化完成
+    1.资源(Resource)控制权限
+二.实现菜单栏
+    1.封装菜单类 Menu
+    	private Long id;
+    	private String name;  //菜单名字
+    	private String url ;  //对应菜单超链接地址
+    	private String icon;  //图片在webapp的相对路径
+    	//父类菜单，自关联 （多对一）
+    	private Menu parent; 
+    	
+    	//生成构造方法 (无参，有参，带id)
+    	public Menu(String name,String url,Menu parent);
+    	//重写toString方法  
+    2.运行代码生成器(运行com.hd.pss.template.CreateTemplate.java)
+    
+    3.配置Menu.hbm.xml
+      <hibernate>
+      		<class >
+      		
+			<!--自关联 ： 多对一 -->
+			<many-to-one  name="parent" column="parent_id" />      		  
+      		</class>
+      </hibernate>	
+    	
+    3.在角色中添加菜单模型 
+    	Role{
+    		//注意区分菜单和资源的差别
+    		//多对多
+    		private Set<Menu> menus = new HashSet<Menu>();
+    	}
+   
+   4.生成表(运行测试),检查关联关系是否正确。在menu测试类中添加测试数据。	
+   
+   5.修改AllTests类中测试类执行的顺序(删除表后重新运行测试类，生成表)
+   
+ 三.实现一级菜单和二级菜单  
+   1.实现方法
+	   //获取一级菜单
+		public List<Menu> findParentMenusByLogin(Employee employee) {
+			String hql = "select distinct m from Employee e join e.roles r join r.menus m where m.parent is null and e = ?";
+			return findByHql(hql, employee);
+		}
+	
+		//获取二级菜单
+		public List<Menu> findChildrenMenusByLogin(Employee employee, Long parentMenuId) {
+			String hql = "select distinct m from Employee e join e.roles r join r.menus m where m.parent.id = ? and e = ?";
+			return findByHql(hql, parentMenuId,employee);
+		}
+   
+   2.测试类
+	    @Test
+		public void query() throws Exception{
+			Employee employee = new Employee();
+			employee.setId(2L);
+			List<Menu> parentMenuList = menuService.findParentMenusByLogin(employee);
+			//遍历一级菜单
+			for(Menu parentMenu : parentMenuList){
+				System.out.println("一级菜单:" + parentMenu);
+				// 二级菜单
+				List<Menu> childrenlist = menuService.findChildrenMenusByLogin(employee, parentMenu.getId());
+				for (Menu childmenu : childrenlist) {
+					System.out.println("二级菜单:" + childmenu);
+				}
+				System.out.println("---------------------");
+			}
+		}
+   
+		
+	
+
+
+
+   

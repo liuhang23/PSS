@@ -1,0 +1,80 @@
+一.修改后保存仍然在当前页面
+    解决思路 ：将需要的参数传回后台(1.查询条件  2.当前页  3.选择的页码条数)
+    具体步骤 : 把查询的参数传递到xx-input.jsp,提交又把查询的参数提交到action,做重定向的时候把查询的参数在传递
+    		  1.把修改的链接改成表单提交的修改  
+    		  	<%-- <a onclick="confirm('确定要删除吗?')" class="xiu" href="employee_delete.action?id=${id}">删除</a> --%>
+    		  	<a class="xiu" href="#" onclick="updateDomain('employee_input.action?id=${id}');">修改</a>
+    		  2.在page.jsp页面中填写一个js函数
+    		      /*表单提交的函数  */
+				  function updateDomain(){
+					  document.forms[0].action =url;
+					  document.forms[0].submit();
+				  }
+    		  	xx.input.jsp  添加隐藏域
+    		  		<s:hidden name="baseQuery.currentPage">
+	    		  	<s:hidden name="baseQuery.pageSize">
+	    		  	<s:hidden name="baseQuery.name">
+	    		  	<s:hidden name="baseQuery.email">
+	    		  	<s:hidden name="baseQuery.deptId">
+    		  3.在Struts.xml配置文件中传递参数
+    		  	<result name="reload" type="redirectAction">
+		 				<!--传递请求的url  -->
+		 				<param name="actionName"> employee </param>
+		 				<!--get方式提交: 额外的参数：取EmployeeAction里面getBaseQuery().getCurrentPage() -->
+		 				<param name="baseQuery.currentPage">${baseQuery.currentPage}</param>
+		 				<param name="baseQuery.pageSize">${baseQuery.pageSize}</param>
+		 				<param name="baseQuery.name">${baseQuery.name}</param>
+		 				<param name="baseQuery.email">${baseQuery.email}</param>
+		 			  	<param name="baseQuery.deptId">${baseQuery.deptId}</param>
+		 		</result>
+		 	  4.get提交带来乱码问题【修改服务器文件，解决乱码 ,进行配置 URIEncoding="UTF-8"】
+		 	  	http://localhost:8080/pss/employee.action?baseQuery.currentPage=2&baseQuery.pageSize=10&baseQuery.name=&baseQuery.email=&baseQuery.deptId=-1
+		 	  	解决方法 ： 在tomcat中server.xml中设置编码格式
+		 	  	 <Connector  port="8080" protocol="HTTP/1.1" connectionTimeout="2000"
+		 	  	 		redirectPort="8443" URIEncoding="UTF-8">    
+		 	  	 		
+		 	  5.修改请求会出现的问题（选择最后一页，如果进入修改页面，在浏览期上返回，在点首页会出现进入修改页面）	 		   
+		 	  	解决方法 ：在请求时拼接url,请求完成在改为之前的url
+		 	  			 <a class="xiu" href="#" onclick="updateDomain('employee',${id});">修改</a>
+		 	  			  /*表单提交的函数  */
+						  function updateDomain(url,id){
+							  //document.forms[0].action = url+"_input.action?id="+id;
+							  //document.forms[0].submit();
+							  //document.forms[0].action = url+".action";
+							  $("#domainForm").attr("action",url+"_input.action?id="+id);
+							  $("#domainForm").submit();
+							  $("#domainForm").attr("action",url+".action");
+						  }	
+						  
+			 6.编码和解码
+			 	System.out.println(java.net.URLDecoder.decode("%E6%96%B9%E6%B3%95", "UTF-8"));  //解码  ---方法
+				System.out.println(java.net.URLEncoder.encode("方法", "UTF-8"));  				//编码  ---%E6%96%B9%E6%B3%95
+						  
+		 	  	
+		 	  
+二.高级删除	【 ajax方式 】  带条件的删除
+	1.如果在括号的双引号中存在双引号，可以使用转义符\来编写  out.print("{\"success\":true,\"msg\":\"删除成功\"}");
+	2.在employee.jsp页面改变删除的连接 :
+		 <a onclick="deleteDomain('employee_delete.action',${id})" class="xiu" href="employee_delete.action?id=${id}">删除</a>
+		 添加jquery.js
+	3.在page页面修改
+			//ajax的删除:发出一个ajax删除请求
+			  function deleteDomain(url,idValue){
+				  $.get(url,{id:idValue},function(data){
+					  // alert("data Loaded:" +data);
+					  if(data.success){
+						  $("#domainForm").submit();
+					  }else{
+						  alert(data.msg);
+					  }
+				  });
+			  }
+	
+		
+    
+		 	  	
+		 	  	
+		 	  		
+		 		
+		 		
+		 		

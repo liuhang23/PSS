@@ -1,0 +1,47 @@
+1.abstract BaseAction  extends ActionSuppot: 用于保存非CURD需求的Action,保存公共属性
+
+
+2.处理domain对象的CURD
+ *	注意点 ：接口中所有方法都是abstract的，抽象类就是允许abstract方法存在的，所以不需要实现
+ *		    抽象类不能被实例化，所以它没必要实现所有的方法
+abstract CURDAction  extends BaseAction implements ModelDriven<T> , Preparable{  
+
+   //在input前需要做处理，则定义prepareInput
+}
+
+3.消息提示----------------------------------------
+1.js操作删除提示 onClick="return confirm('确定要删除吗?')"
+2.Struts2自带的消息提示
+	 addActionMessage("删除成功");
+	 addActionMessage("保存成功");
+	 
+	 页面效果呈现 : <s:actionmessage   />
+	 
+	 
+3.actionMessage在redirect（重定向）后会丢失 
+    <!--基于paramsPrepareParamsStack 增加store interceptor保证actionMessage在redirect后不会丢失 -->	 
+    <interceptor-ref name="store">
+    	<param name="operationMode">AUTOMATIC</param>
+    </interceptor-ref>
+    
+    
+ 4.自定义的拦截器栈pssStack   
+ 	   <!-- 自定义拦截器栈  -->
+		<interceptors>
+				<interceptor-stack name="pssStack">
+					<!-- 基于paramsPrepareParamsStack 增加store ,interceptor保证actionMessage在redirect后不会丢失 -->
+					<interceptor-ref name="store">
+						<param name="operationMode">AUTOMATIC</param>
+					</interceptor-ref>
+					<!-- 添加默认的拦截器栈defaultStack为paramsPrepareParamsStack  -->
+					<interceptor-ref name="paramsPrepareParamsStack" />
+				</interceptor-stack>
+		</interceptors>
+		
+		<!-- 修改默认的拦截器栈 -->
+		<default-interceptor-ref name="pssStack" />
+		
+		
+		
+		
+		

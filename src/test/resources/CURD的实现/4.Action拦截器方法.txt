@@ -1,0 +1,82 @@
+一.提出问题
+   1.1数据库一个表里面有2个字段 username,password
+   要求只可以在页面其中修改一个字段?Username,如何实现（在修改页面里面没有出现属性password数据不能丢失）？
+	
+   1.2解决问题： 1.如果遇到不能修改的字段过多,写很多隐藏域加载页面数据量增大，有可能造成数据泄密<s:hidden name="employee.password">
+   			2.在映射文件里面修改配置项
+   				不过配置好，所有的后续操作都不能修改了<property name="password" update="false">
+			3.Action的save方法
+				如果遇到不能修改的字段过多，会写过多的set和get方法，
+				先查询数据库，获取持久状态的对象，然后把页面的数据set到对象里面.
+				Employee tempEmployee = employeeService.get(employee.getId());   			
+   				//需要修改的值就从页面里面的employee放入tempEmployee
+   				tempEmployee.setUsername(employee.getUsername());
+   				employeeService.update(tempEmployee);
+		    4.最佳方案:使用ModelDrivren<T> Preparable
+		    	 Struts2.x主要的代码是由webwork发展而来，
+		    	 	其实是第3种方案的改进，不需要手动set需要修改的属性，而是通过改变拦截器执行顺序从而自动set需要修改的属性
+		    	 
+	
+二.paramsPrepareParamsStack拦截器
+	2.1  默认拦截器执行的顺序		
+			<interceptor-stack name="defaultStack">			
+					<interceptor-ref name="prepare">      //前置处理功能
+					<interceptor-ref name="modelDriven">  //该变栈顶对象：关键是getModel()是否为空[null],不为空就加到栈顶，可以直接取里面的属性
+					<interceptor-ref name="params">		  //设置jsp的参数到action中
+					...
+			</interceptor-stack>	
+	
+    2.2 只要访问action里面任意一个方法都会先执行				   
+		 可以通过<s:debug />看到栈顶对象
+		EmployeeAction extends ActionSupport implements ModelDriven<Employee>,Preparable{
+			//只要访问action里面任意一个方法都会先执行	
+			public void prepare() throws Exception {
+				System.out.println("prepare");
+			}
+			public void prepareEdit() throws Exception {
+				System.out.println("prepareEdit");
+			}
+			//该变栈顶对象[不为null,则该对象【employee】在栈顶，为空则EmployeeAction在栈顶]， 好处:可以直接取里面的属性
+			public Employee getModel() {
+				return employee;
+			}
+		}		
+		
+	2.3 取栈顶元素可以直接id、name  ,先前取值需要employee.id ,employee.name,employee.passwrod	   
+		修改传参方式                : <a class="xiu" href="employee_edit.action?employee.id=${id}">修改</a>
+		改为传id(去掉emoloyee对象)  : <a class="xiu" href="employee_edit.action?id=${id}">修改</a>
+		  页面可以设置可见效果  <s:if test="id==null">
+		  							<tr><td></td></tr>
+		  				    </s:if>
+		  
+	2.4 Struts2.x默认使用的拦截器栈 <defaul-interceptor-ref name="defaultStack">
+	    必须修改默认的拦截器栈为 paramsPrepareParamsStack
+					        <default-intercepto-ref name="paramsPrepareParamsStack">
+		<interceptor-stack name="paramsPrepareParamsStack">			
+					<interceptor-ref name="params">		  //设置jsp的参数到action中
+					<interceptor-ref name="prepare">      //前置处理功能
+					<interceptor-ref name="modelDriven">  //该变栈顶对象：关键是getModel()是否为空[null],不为空就加到栈顶，可以直接取里面的属性
+					<interceptor-ref name="params">		  //设置jsp的参数到action中,防止数据丢失
+					...
+		</interceptor-stack>			   
+		修改拦截器执行的顺序后 : 			      	           栈内元素顺序
+			执行修改 : employee_edit.action?id=1 --->       栈顶：employee - EmployeeAction
+			执行保存 : employee_save.action   			   栈顶 EmployeeAction	
+					 /<s:hidden name="id" value=1>
+					 
+四.使用ModelDriven的好处，
+	 1.简化jsp代码     <s:textfield name="employee.username">
+	   使用模型驱动之后 <s:textfield name="username">
+	 2.可以简化Action的代码，不需要堆emoloyee写getEmployee和setEmployee，
+	   因为通过modelDriven放到栈顶的对象可以直接set和get（默认当前action对象在栈顶）
+	 
+	 
+	 
+	 掌握点 : 1.理解struts2拦截器的作用
+	 		 2.实现自定义拦截器	
+	 		 
+	 		 
+	 		 
+	 		 		 
+					   
+					   

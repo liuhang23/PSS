@@ -1,0 +1,110 @@
+一.搭建js验证框架   jquery-validation-1.8.1
+   1.导入文件包
+   2.把Css和js引入
+   	   <link rel="stylesheet" type="text/css" media="screen" href="js/validation/css/screen.css" />
+       <script src="js/jquery-1.8.2.min.js" type="text/javascript"></script>
+       <script src="js/validation/jquery.validate.js" type="text/javascript"></script>
+       <script src="js/validation/messages_cn.js" type="text/javascript"></script>
+
+      验证与样式控件保持分离
+   3.写简单验证
+         $().ready(function(){
+			/* 等body加载完毕之后才执行,下面写的代码必须是英文版本 */
+			$("#employeeForm").validate({
+			/* 定义规则 */
+			rules: {
+     			name : "required"
+			},
+			messages : {
+     			name : "用户名必须填写"
+			}
+			});
+    	});
+
+   4.添加age,password ,email验证
+   			$().ready(function(){ 
+			/* 等body加载完毕之后才执行,下面写的代码必须是英文版本 */
+			$("#employeeForm").validate({
+				/* 定义规则 */
+				rules: {
+					name : {
+						required  : true,
+						minlength : 5	
+					},
+					password : {
+						required  : true,
+						minlength : 5
+					},
+					email:"email",
+					age : {
+						digits : true,
+						range  :[18,70]
+					}
+				},	
+					messages : {
+						name :{
+							required  : "名称必须填写"
+						}
+					}
+			});
+		});
+
+   5.ajax验证 ：必须要让后台的方法返回一个boolean值
+   	   5.1rules: {
+				name : {
+					required  : true,
+					minlength : 5,
+					//添加一个ajax验证，用户名不能重名
+					remote : "employee_check.action"	
+				    }
+				},	
+			messages : {
+				name :{
+					required  : "名称必须填写",
+					remote : "此户名已经存在"
+				}
+			}	
+   	  5.2  在BaseDao中添加方法
+   	  		//1.  select count(o) from Employee o where o.name = ? 
+			//2.  select o form Employee o where o.name = ?
+			//3.  select o.name,o.email form Employee o where o.name = ?
+   	       public List  findByHql(String hql , Object... objects){
+   	       		//适用于多中查询
+				return getHibernateTemplate().find(hql, objects);
+			}
+   	  5.3  在IBaseService定义公共方法  List  findByHql(String hql , Object... objects);
+   	  5.4  在BaseService中进行实现	
+   	  		public List findByHql(String hql, Object... objects) {
+				return baseDao.findByHql(hql, objects);
+			}
+	  5.5  在BaseAction中进行调用   可以实现验证用户名重复
+	  		//处理ajax验证，用户名不能重复:返回值是false就表示用户名重复了
+			public String check() throws Exception{
+				logger.debug("check:name= "+ name);
+				HttpServletResponse response = ServletActionContext.getResponse();
+				response.setContentType("text/json;charset=UTF-8");
+				PrintWriter out  = response.getWriter();
+				out.print(employeeService.findByName(name));
+				return null;
+			}		
+      5.5  小问题 : 修改时如果没有修改用户名，会报用户名重复，原因是会进行ajax请求验证。
+      	   解决   : 新增的处理和修改的处理是不同的  ：判断Id
+      	   		    在隐藏域中设置id<s:hidden id="id" name="id">
+      	   		    在请求是传入id
+      	   		   	remote : "employee_check.action?id=" + $("#id").val()	
+      	   		
+   				//新增的处理和修改的处理是不同的  ：判断Id
+				if(id == null){
+					out.print(employeeService.findByName(name)); //新增
+				}else{
+					Employee employee = employeeService.get(id); //获取修改的对象
+					//没有修改名字，不要验证用户名重复
+					if(employee.getName().equals(name)){
+						out.print(true);
+					}else{
+						//修改了，就进行查询验证
+						out.print(employeeService.findByName(name));
+					}
+				}
+           总结：在用插件做ajax的验证时候，后台需要返回一个boolean类型值
+   

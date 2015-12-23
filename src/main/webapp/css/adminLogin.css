@@ -1,0 +1,34 @@
+@charset "UTF-8";
+*{ margin:0; padding:0;}
+.fl_lt{ float: left;}
+.fl_rt{ float: right;}
+img{ border: none;}
+a{ text-decoration: none;}
+ul,li{ list-style:none;}
+.mar-top{
+  margin-top:20px;
+  }
+
+/*for header*/
+.header{ width: 100%; height:48px; background:#277fc2;  left: 0; top: 0; border-bottom: 1px #fff solid;}
+.header-inner{ width: 78%; height: inherit; margin: 0 auto; font-family: 微软雅黑;}
+.header-inner img{ width: 118px; padding-top: 6px;}
+.header-inner h2{ margin-left: 50px; margin-top:4px; line-height: 40px; font-size: 23px; font-weight: normal; color: #fff;}
+.header-inner a{color: #FFFFFF; float: right; font-size: 14px; background-color: #418FCA; padding: 5px 9px; margin: 8px; margin-top: 8px; border: 1px solid #77B0DB; border-radius: 2px;}
+.header-inner a:hover{ background-color:#499AD8;}
+.header-inner .welcome{ height: 48px; line-height: 48px; color: #fff; font-size: 12px;}
+/* CSS Document */
+body{ font-size:12px;  font-family: Arial,"宋体",Helvetica,sans-serif; background-color:#E7F2F9;}
+.middle{width: 1200px; min-width: 1200px; margin: 0px auto; } 
+.img{margin-left:85px; } 
+.land-box{background-color: #fff; top: 60px; width: 250px; height: 213px; padding: 25px 33px; box-shadow: 0 0 4px rgba(0,0,0,0.3); border-radius: 3px; margin-top:180px; } 
+#land_name, #password{width: 247px; height: 30px; } 
+.land-text{margin-bottom:5px; } 
+.forgetPW{color:#277FC2; cursor:pointer; }
+#landButton{width: 253px; height: 36px; border-radius: 5px; border: 1px solid #CCC; background-color: #277FC2; outline:none; cursor:pointer; font-size:15px; color:#fff; }
+
+
+.footer{width: 100%;  padding-top: 40px; margin-top: 50px; } 
+.footer .footer-link{margin: 0 auto; border-top: 1px solid #ccc; padding: 50px 0px; font-size: 14px; color: #9B9696;} 
+.footer .footer-link ul{ margin: 0 auto; width: 1200px; text-align: center;}
+.footer .footer-link ul li{ display: inline-block;  margin-left: 10px;}

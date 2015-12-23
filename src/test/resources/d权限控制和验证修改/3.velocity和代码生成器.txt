@@ -1,0 +1,74 @@
+一.模板技术 (velocity)
+   1.1 Struts2里面使用的模板技术：freemarker(.ftl)，velocity(.vm)
+   		jar : velocity.jar velocity-tools.jar
+   1.2 jsp: 转译成java文件，编译成class文件(第一次)，运行
+   1.3 模板文件 : 静态文件，把数据这个静态文件集合在一起，作为流进行输出
+   1.4 作用 : a.静态页面动态化  b.代码生成器
+   1.5 文档 : 
+			 velocity-1.7/docs/index.html
+		     velocity-1.7/docs/user-guide.html用户指南,教使用模板
+		     velocity-1.7/docs/developer-guide.html开发指南,教写代码
+   1.6 编写测试类 velocity  ---HelloWorldTest.java
+   1.7 在pss目录下新建一个文件夹template,在文件夹中新建hello.vm  动态内容测试hello.html
+    
+	    
+   
+二.演示velocity和struts2集成:添加1个jar文件
+   2.1 编写VelocityAction.java
+   		 //实例化一个上下文
+		 VelocityContext context = new VelocityContext();
+		 //添加数据
+		 context.put("text", "velocity模板"+new Date().toLocaleString());
+		 //获取模板对象
+		 //Template template = Velocity.getTemplate("template/hello.vm","UTF-8");
+		 Template template = Velocity.getTemplate("template/hello.html","UTF-8");
+		 //准备流
+		 StringWriter writer = new StringWriter();
+		 //把模板和数据的上下文合并 ： 流
+		 template.merge(context,writer);
+		 //输出
+		 System.out.println(writer.toString());
+   2.2 在struts2中配置
+   		<!-- 演示velocity和Struts2集成
+			 1.不为spring管理的就使用全类名 : com.hd.pss.view.action.VelocityAction
+			 2.type 输出的类型为velocity方式
+		 -->
+		<action name="velocity" class="com.hd.pss.view.action.VelocityAction">
+			<result type="velocity">/WEB-INF/employee/hello.html</result>
+		</action>
+		
+三.代码集成器 【依靠velocity实现】
+	3.1代码生成器目的:提高开发效率,减少相同代码书写(com.hd.pss.template.CreateTemplate.java)
+		1.准备9个模板文件:工程的根目录下template文件夹(Action.java...)
+		2.定义domain的数组:外for
+		3.定义9个模板文件的数组:内for
+			${domain}; ${lowerDomain};
+		4.定义9个模板文件的文件路径
+		5.先不生成文件,先生成文件的路径是否正确
+		
+    3.2 配置struts.xml
+	       <!-- 处理其他所有的crud的action -->	
+	       <action name="*_*"   class = "{1}Action" method="{2}">
+	       		<result >/WEB-INF/pages/{1}/{1}.jsp</result>
+	       		<!-- 如果出现转换异常:把字符串放到了Integer属性里面 ,默认会跳转到input指向的jsp页面 -->
+	       		<result name="input">/WEB-INF/pages/{1}/{1}-input.jsp</result>
+	       		<result name="reload" type="redirctAction">
+	       			<!-- 传递请求的url -->
+					<param name="actionName">{1}</param>
+					<!-- get方式:传递额外的参数:取xxxAction里面getBaseQuery().getCurrentPage() -->
+					<param name="baseQuery.currentPage">${baseQuery.currentPage}</param>
+					<param name="baseQuery.pageSize">${baseQuery.pageSize}</param>
+	       		</result>
+	       </action>		
+		
+		
+		
+		
+
+
+
+
+
+		
+   
+   

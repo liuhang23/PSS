@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="com.hd.pss.domain">
+    <class name="SystemDictionaryDetail" >
+    	<id name="id">
+			<generator class="native"></generator>
+		</id>
+		<property name="name"></property>
+		<!-- 
+		   订单详情 : 多对一 private SystemDictionaryType types
+	       		数据字典明细: n ==== 1 数据字典类型
+	      	    多的一方建立外键[types_id]
+		 -->
+		<many-to-one name="types" column="types_id"></many-to-one>
+		
+    </class>
+</hibernate-mapping>

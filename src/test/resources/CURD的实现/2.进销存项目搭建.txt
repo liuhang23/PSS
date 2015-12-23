@@ -1,0 +1,101 @@
+1.采用Mavean+Spring3+Struts2+Hibernate3
+	1.1新键Maven项目pss(进销存) 
+	  【 build Path 】--> 调整文件夹排序 
+    1.2版本统一 （Spring版本3.2.2,Hibernate(3.5.4),Struts2 (2.2.3)）
+Spring + hibernate   
+2.在src/main/resources中新建applicationContext.xml
+  applicationContext.xml加载执行顺序 :  
+	 jdbc.properties--->dataSource--->sessionFactory-->xxxDao--->xxxService--->xxxAction
+  2.1.配置数据源		 
+  2.2.配置Hibernate的SessionFactory
+  2.3.配置事务管理
+  		
+	 
+3.建议使用，公有baseDao,一个domain(实体)对应一个Service 
+
+	<bean id="baseDao" class="com.hd.pps.dao.BaseDao" > 
+		<property name="sessionFactory" ref="sessionFactory"></property> <!-- 引入sessionFactory -->
+	</bean>	
+	 
+
+4.DAO(新建BaseDao)
+	公共的curd方法
+
+5.Service(新建IBaseService及其实现类)
+   IBaseService  --->BaseServiceImpl
+   IxxService extends IBaseService     --- >  xxxServiceImpl extends BaseServiceImpl implements IxxService
+	
+	//通过反射获取传入的实体类型
+	public BaseServiceImpl(){
+		Class clazz = getClass(); //此处获取的是子类字节码（EmployeeServiceImpl），父类声明为抽象类无法实例化 
+		System.out.println("clazz:" + clazz);
+		Type type = clazz.getGenericSuperclass();
+		System.out.println("getGenericSuperclass():"+type);  //此处获取父类Class---BaseServiceImpl<Employee>
+		if(type instanceof ParameterizedType){
+			ParameterizedType parameterizedType = (ParameterizedType) type;
+			entityClass = (Class<T>)parameterizedType.getActualTypeArguments()[0];
+		}
+		System.out.println("entityClass:"+entityClass); //Employee.class
+	}	
+	
+6.IEmployeeService  , EmployeeServiceImpl	
+
+7.Spring + struts（实现CURD）
+  
+	7.配置web.xml
+		  配置Spring的监听器 和 Struts2过滤器 ,添加上下文属性
+		  
+    <!-- 1.告诉Web从哪里去找applicationContext.xml -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>classpath:applicationContext.xml</param-value>
+	</context-param>
+
+	<!-- 2.系统启动就初始化Spring容器 -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	
+	<!-- 3.在视图层打开Session (请求开启Session,响应结束关闭Session)  在客户端请求开启Session,在响应关闭Session-->
+	<filter>
+		<filter-name>OpenSessionInViewFilter</filter-name>
+		<filter-class>org.springframework.orm.hibernate3.support.OpenSessionInViewFilter</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>OpenSessionInViewFilter</filter-name>
+		<url-pattern>/*</url-pattern>	
+	</filter-mapping>
+
+	<!--4. Struts2的核心过滤器配置 -->
+	<filter>
+		<filter-name>struts2</filter-name>
+		<filter-class>org.apache.struts2.dispatcher.ng.filter.StrutsPrepareAndExecuteFilter</filter-class>
+	</filter>
+	<!-- Struts2过滤器拦截所有的.action请求 -->
+	<filter-mapping>
+		<filter-name>struts2</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+
+	<welcome-file-list>
+		<welcome-file>index.html</welcome-file>
+	</welcome-file-list>
+	
+	
+	
+		  	
+8.添加struts2.xml
+   配置action
+   注意点  action需要配置为多例（否则每次只能添加一次）scope = "prototype";  每次请求的都是新的实例对象
+	   
+	      使用simple的模板  theme="simple";
+	    	  
+10.分页伪代码 ： 
+
+11.配置日志(slf4j   log4j)
+
+
+
+	    	  
+	    	  

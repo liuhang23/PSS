@@ -1,0 +1,99 @@
+一.处理登陆
+	BaseAction.java  
+			//存登陆session里面key
+			public static final String LOGIN_IN_SESSION = "loginUser";
+	
+			//重定向到后台主页
+			public static final String  MAIN = "main";
+	1.编写LoginAction
+     private String name;
+     private String password;
+   
+   	 //显示登陆的页面
+   	 @Override 
+   	 publi String execute() throws Exception{
+			return LOGIN;	   	 	
+   	 }
+   	 
+     //处理登陆的请求
+     public String check() throws Exception{
+     		Employee employee = employeeService.findByLogin(name , password);
+     		if(employee != null){ //登陆成功
+     			 //放入session,重定向跳转到后台主页
+     			 ServletActionContext.getRequest().getSesion().setAttribute(LOGIN_IN_SESSION,employee);
+     		}
+     		retrun LOGIN;
+     }	
+   
+   2.在struts.xml中配置
+   		 <default-interceptir-ref name="pssStack" />
+   		 //全局的结果级 : 需要防在拦截器后面
+   		 <global-results>
+   				<result name="login">/WEB-INF/page.login.jsp</result>
+   				<result name="main"  type="redirectAction">main</result>	
+   		 </global-results>
+   		//登陆的结果集交给全局result处理
+   		<action name="login_*" class="loginAction" method="{1}" />
+				   		
+   3.在CommonManager.xml配置loginAction
+   	  <bean id="loginAction" class="cd=com.hd.pss.view.LoginAction"  scope="prototype">
+		<property name="employeeService" ref="employeeService" />
+	  </bean>
+   
+   4.准备登陆页面 login.jsp
+   
+   
+   5.在员工IEmployeeService.java中添加接口
+   		//验证登陆IEmployeeService.java
+   		Employee findByLogin(String name , String password);
+   	    
+   		//方法实现 EmployeeSerivce.java
+   		publi Employee findByLogin(String name , String passwrod){
+   			String hql = "SELECT o FROM employee o where o.name=? and o.password";
+   			List<Employee> list = findByHql(hql,name,password);
+   			//在Employee.hbm.xml映射文件 : <property name="name"  unique="true" />
+   			if(list.size() == 1){
+   				return list.get(0);
+   			}
+   			return  null;
+   		}			
+   
+二.拦截登陆
+	1.新建一个类AuthInterator.java
+	2.在struts配置文件中配置拦截器
+	   		    <!-- 自定义一个权限拦截器 -->
+				<interceptor name="authInterceptor" class="com.hd.pss.interceptor.AuthInterceptor" />
+   				<!-- 自定义一个拦截器栈 -->
+				<interceptor-stack name="pssStack">
+   					<!-- 放到最前面:引用自定义一个权限拦截器 -->
+					<interceptor-ref name="authInterceptor" />
+   				</interceptor-stack>
+   3.AuthInterator extends AbstractInterator{
+   
+			@Override
+			public String intercept(ActionInvocation invocation) throws Exception {
+				Object action = invocation.getAction();
+				System.out.println("AuthInterceptor:"+action);
+				//1.排除一些不能拦截的LoginActin,验证码Action
+				if(action instanceof LoginAction){
+					return invocation.invoke();  // 进入下一个拦截器
+				}
+				
+				//2.拦截登录 :  获取session
+				//Employee employee = (Employee)ServletActionContext.getRequest().getSession().getAttribute(BaseAction.LOGIN_IN_SESSION);
+				Employee employee = (Employee) invocation.getInvocationContext().getSession().get(BaseAction.LOGIN_IN_SESSION);
+				System.out.println("..."+employee);
+				if(employee == null){
+					// <global-results>
+					//       <result name="login">/WEB-INF/pages/login.jsp</result>
+				    // </global-results>
+					return Action.LOGIN;  //跳转到登陆
+				}
+				return invocation.invoke();  // 进入下一个拦截器
+			}
+	   			
+     }
+   
+   
+   
+   

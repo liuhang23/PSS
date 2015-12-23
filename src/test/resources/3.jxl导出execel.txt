@@ -1,0 +1,214 @@
+一.数据的迁移和导入--------将数据变成Execel文件
+   1.编写测试文件 ： 在com.hd.pss.jxl中测试
+   2.// \t==tab   \r\n换行
+二.封装在导出与导入的方法在IBaseService中
+   1.使用struts2中的文件上传（upload）下载）（fileDown）
+   	  IBaseService.java	
+   		// 导出xls文件:查询有数据,生成InputStream,让用户下载
+		InputStream exp(String[] heads, List<String[]> list) throws Exception;
+
+		// 超级管理员:导入xls文件:让用户上传一个xls文件(格式必须固定,每列放什么字段的数据必须规定好),解析
+		List<String[]> imp(File file) throws Exception;
+   		
+   2. 实现类
+		public InputStream exp(String[] heads, List<String[]> list) throws Exception {
+			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+			// 创建一个xls文件
+			WritableWorkbook workbook = Workbook.createWorkbook(outputStream);
+			// 创建xls文件里面的表
+			WritableSheet sheet = workbook.createSheet("sheet1", 0);
+			// param1:col 列
+			// param2:row 行
+			for (int i = 0; i < heads.length; i++) {
+				Label label = new Label(i, 0, heads[i]);
+				sheet.addCell(label);
+			}
+			// 2.处理数据
+			for (int i = 0; i < list.size(); i++) {
+				String[] strings = list.get(i);// 一行的数据
+				for (int j = 0; j < strings.length; j++) {
+					Label label = new Label(j, i + 1, strings[j]);// 排除表头已经用了一行
+					sheet.addCell(label);
+				}
+			}
+			// 关闭流
+			workbook.write();
+			workbook.close();
+			return new ByteArrayInputStream(outputStream.toByteArray());
+		}
+
+		public List<String[]> imp(File file) throws Exception {
+			List<String[]> list = new ArrayList<String[]>();
+			// 获取一个xls文件
+			Workbook workbook = Workbook.getWorkbook(file);
+			// 获取xls文件里面的表
+			Sheet sheet = workbook.getSheet(0);
+			// 获取行/列
+			System.out.println("行:" + sheet.getRows());
+			System.out.println("列:" + sheet.getColumns());
+			for (int i = 1; i < sheet.getRows(); i++) {// 排除表头
+				String[] strings = new String[sheet.getColumns()];
+				for (int j = 0; j < sheet.getColumns(); j++) {
+					Cell cell = sheet.getCell(j, i);
+					// System.out.print(cell.getContents() + "\t");
+					strings[j] = cell.getContents();
+				}
+				// System.out.println();
+				list.add(strings);
+			}
+			// 关闭流
+			workbook.close();
+			return list;
+		}
+		
+三 . 导入导出方法的定义与实现
+	3.1interface IBaseService{
+			// 导出xls文件:查询有数据,生成InputStream,让用户下载
+			InputStream exp(String[] heads, List<String[]> list) throws Exception;
+	
+			// 超级管理员:导入xls文件:让用户上传一个xls文件(格式必须固定,每列放什么字段的数据必须规定好),解析
+			List<String[]> imp(File file) throws Exception;
+		}
+		
+	3.2 abstract BaseServiceImpl implements IBaseService<T>{
+			public InputStream exp(String[] heads, List<String[]> list) throws Exception {
+					ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+					// 创建一个xls文件
+					WritableWorkbook workbook = Workbook.createWorkbook(outputStream);
+					// 创建xls文件里面的表
+					WritableSheet sheet = workbook.createSheet("sheet1", 0);
+					// param1:col 列
+					// param2:row 行
+					for (int i = 0; i < heads.length; i++) {
+						Label label = new Label(i, 0, heads[i]);
+						sheet.addCell(label);
+					}
+					// 2.处理数据
+					for (int i = 0; i < list.size(); i++) {
+						String[] strings = list.get(i);// 一行的数据
+						for (int j = 0; j < strings.length; j++) {
+							Label label = new Label(j, i + 1, strings[j]);// 排除表头已经用了一行
+							sheet.addCell(label);
+						}
+					}
+					// 关闭流
+					workbook.write();
+					workbook.close();
+					return new ByteArrayInputStream(outputStream.toByteArray());
+				}
+
+			public List<String[]> imp(File file) throws Exception {
+				List<String[]> list = new ArrayList<String[]>();
+				// 获取一个xls文件
+				Workbook workbook = Workbook.getWorkbook(file);
+				// 获取xls文件里面的表
+				Sheet sheet = workbook.getSheet(0);
+				// 获取行/列
+				System.out.println("行:" + sheet.getRows());
+				System.out.println("列:" + sheet.getColumns());
+				for (int i = 1; i < sheet.getRows(); i++) {// 排除表头
+					String[] strings = new String[sheet.getColumns()];
+					for (int j = 0; j < sheet.getColumns(); j++) {
+						Cell cell = sheet.getCell(j, i);
+						// System.out.print(cell.getContents() + "\t");
+						strings[j] = cell.getContents();
+					}
+					// System.out.println();
+					list.add(strings);
+				}
+				// 关闭流
+				workbook.close();
+				return list;
+			}
+	   }	
+	  
+	  3.3在employee.jsp页面测试<a href="#" onclick="downDomain('employee')">导出</a> 
+	   	 在EmployeeAction.java :
+	   	 			//导成xls文件
+					public String download() throws Exception{
+						String[] heads = { "编号", "用户名", "密码", "email", "年龄", "部门名称" };
+						// 获取到查询的数据
+						baseQuery.setPageSize(Integer.MAX_VALUE);// 一页装所有查询后数据
+						this.pageResult = employeeService.findPageResult(baseQuery);// 默认一页10行
+						List<Employee> employees = pageResult.getRows();
+						List<String[]> list = new ArrayList<String[]>();
+						for (Employee employee : employees) {
+					    	String[] strings = new String[heads.length];  //一行的数据长度
+							strings[0] = employee.getId().toString();
+							strings[1] = employee.getName();
+							strings[2] = employee.getPassword();
+							strings[3] = employee.getEmail();
+							strings[4] = employee.getAge().toString();
+							strings[5] = employee.getDepartment().getName();
+							list.add(strings);// 添加到List
+						}
+						this.inputStream = employeeService.export(heads, list);
+						return "download";
+					}
+					
+					private InputStream inputStream; //输入流
+	  3.4 配置struts.xml
+	  	   <!-- 文件上传与下载：导出xsl -->
+		   <result name="download" type="stream">
+			    <!-- 下载文件的类型图片image/gif  -->
+			 	<!-- tomcat/conf/web.xml -->
+				<param name="contentType">application/vnd.ms-excel</param>
+				<param name="inputName">inputStream</param>
+				<param name="contentDisposition">filename="employee.xls"</param>
+				<!-- <param name="contentDisposition">filename=${fileName}</param> -->
+				<param name="bufferSize">4096</param>
+		   </result>		
+	  	
+	  3.5 page.jsp页面
+	  		  /*文件导出xls*/
+			  function downDomain(url){
+				  $("#domainForm").attr("action",url+"_download.action");
+				  $("#domainForm").submit();
+				  $("#domainForm").attr("action",url+".action");  //完成下载后需要重置
+			  }	
+	//增强版本		  
+	3.6 解决中文乱码 // 乱码:ISO8859-1
+		public String getFileName() throws UnsupportedEncodingException {
+				return new String("员工列表.xls".getBytes("GBK"), "ISO8859-1");
+		}	
+		
+    3.7 <param name="contentDisposition">filename=${fileName}</param> 	
+    
+四.导入xsl并解析
+    4.1  //超级管理员:导入xls文件:让用户上传一个xls文件(格式必须固定,每列放什么字段的数据必须规定好),解析
+		  List<String[]> imp(File file) throws Exception;
+	4.2  //超级管理员:导入xls文件:让用户上传一个xls文件(格式必须固定,每列放什么字段的数据必须规定好),解析
+		public List<String[]> imp(File file) throws Exception {
+			List<String[]> list = new ArrayList<String[]>();
+			// 获取一个xls文件
+			Workbook workbook = Workbook.getWorkbook(file);
+			// 获取xls文件里面的表
+			Sheet sheet = workbook.getSheet(0);
+			// 获取行/列
+			System.out.println("行:" + sheet.getRows());
+			System.out.println("列:" + sheet.getColumns());
+			for (int i = 1; i < sheet.getRows(); i++) {// 排除表头 i=1表示从第2行开始
+				String[] strings = new String[sheet.getColumns()];
+				for (int j = 0; j < sheet.getColumns(); j++) {
+					Cell cell = sheet.getCell(j, i);
+					System.out.print(cell.getContents() + "\t");
+					//strings[j] = cell.getContents();
+				}
+				System.out.println();
+				//list.add(strings);
+			}
+			// 关闭流
+			workbook.close();
+			return list;
+		}	
+    4.3 编写测试
+    	@Test
+		public void readEmployee() throws Exception {
+			List<String[]> list = employeeService.imp(new File("employee.xls"));
+			for (String[] strings : list) {
+				// strings 变成Employee对象,调用save,注意name不能重复
+				System.out.println(Arrays.toString(strings));
+			}
+		}		  
+			
+	   	  	 

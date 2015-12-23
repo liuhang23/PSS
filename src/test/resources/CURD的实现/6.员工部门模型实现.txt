@@ -1,0 +1,85 @@
+1.添加部门选择信息
+	<s:select  list="#allDepts"    //存放部门对象的值
+	 		   listKey="id"  listValue="name"     //对应的名字和Id
+			   name="baseQuery.deptId"   //数据的回显		
+			   headerKey = "----请选择----"  headerValue="-1"    //空值，请选择
+			    />
+ 2.建立domain  ---- Department.java
+      属性 ： private Long id;
+      		 private String name;  
+      		 private String phone;
+      		 
+3.建立映射文件
+  
+4.application配置文件 
+	<!-- 加载配置文件Resource[] mappingLocations 1.前面加上classpath 要小写 2.可以使用通配符-->
+    <property name="mappingLocations" value="classpath:com/hd/pss/domain/*.hbm.xml"></property>
+    
+    <!--现在src/main/resources创建一个文件夹（其实是一个包），通过通配符引入  --> 
+	<import resource="classpath:manager/*Manager.xml"  /> 
+	
+	
+5.遇到的问题 ： 在src/main/resources 目录下新建manager包，在applicationContext.xml中通过
+				<import resource="classpath:manager/*Manager"> 通过通配符的方式导入不成功。
+				
+6.使用junit做测试，设置快捷的测试方式，右键项目--->new--->other--> java-->junit  -->junit  test	 suite
+	 放前面(单表)的先运行，依赖的测试应该放后面
+	 
+	 
+7抽取测试类 BaseServiceTest.java
+		@RunWith(SpringJUnit4ClassRunner.class) //通过Spring的Test
+		@ContextConfiguration("classpath:applicationContext.xml")
+		public abstract class BaseServiceTest {
+
+		}
+  其余的测试类只需要extends BaseServciceTest 就可以不需要编写测试的注解
+  
+  
+8.员工部门CURD注意点
+	 8.1 : 跳转到添加或修改页面是需要有选择部门名称的下拉列表 
+	    //添加一个部门的选择列表    在input方法中执行
+		putContext("allDepts", departmentService.getAll());
+	 8.2 : 保存操作会出现的问题
+	 	//请选择部门: 没有部门，部门=null，如果不做操作就会出现外键约束，此时应该将部门设置为空
+		Department department = employee.getDepartment();
+		if(department != null && department.getId() == -1L){
+			employee.setDepartment(null);
+		}
+		
+	8.3	: 修改已经添加员工对象部门会报错
+		 错误： identifier of an instance of com.hd.pss.domain.Department was altered from 2 to 3
+		 解决方案://在beforeSave方法中employee为持久化状态,持久化状态无法更改
+		 		//employee.getDepartment();持久化状态
+		 		改变状态：把持久状态变成瞬时状态  : employee.setDepartment(null);
+  
+    8.4 : 数据存储转换异常
+      	 8.4.1<!-- 如果出现转换异常，把字符串放到了Interger属性里面，默认会跳到input指向的页面 -->
+		 	  <result name="input">/WEB-INF/employee/employee-input.jsp</result>
+     
+       	8.4.2 //设置@InputConfig(methodName="input")，出现转换异常则跳到input方法中	
+      		   @InputConfig(methodName = "input")  //在save方法中添加
+  		     //@InputConfig(resultName = "input"),默认是跳转到input指向的页面
+  		
+  		8.4.3解决方法 ：  添加错误提示标签 <s:fielderror>    
+	    	 抽取出一个消息提示 message.jsp
+	    	 在ActionSupport中存在 hasActionMessages()[提示信息], hasFieldErrors() [字段是否有误]
+                <s:if test="hasFieldErrors()">
+					<!-- 有转换异常出现 -->
+					<span style="color:red"><s:fielderror /></span>
+				</s:if>
+				<s:if test="hasActionMessages()">
+					<!-- 有提示信息出现 -->
+					<span style="color:blue"><s:actionmessage /></span>
+				</s:if>
+			  使用<%@include file="/WEB-INF/employee/message.jsp" %>导入到页面	
+			  
+		  CURDAction页面中分页处添加字符串到Interger属性中，使用	@InputConfig(methodName = "execute")来解决  
+         
+         8.4.4 抽取分页 page.jsp
+          
+    8.5日志管理
+    	//日志对象  getClass 表示谁实例化就获得谁的对象
+	    protected	Logger logger =  LoggerFactory.getLogger(getClass());	
+    	其他子类可以直接使用logger对象  ： logger.debug("list");     方便查看是否进入这个类中。
+    	 		
+    	

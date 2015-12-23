@@ -1,0 +1,143 @@
+一.拦截权限
+  问题1 ： 哪些action的方法需要拦截 ： 在资源管理的方法出现的就要拦截?
+  1.1 在IEmployeeService中
+  		//查询所有的资源方法
+  		List<String> getAllResourceMethods;
+  		
+  		//看当前登录的用户是否具有这个资源:employee->employee_role->role->role_resource->resource
+  		 List<String> findResourceMethodByLogin(Long loginUserId);
+  		 
+  	实现类 ： 1.//查询所有的资源方法
+				public List<String> getAllResourceMethods() {
+					return findByHql("SELECT o.method FROM Resource o");
+				}	 
+			2.//看当前登录的用户是否具有这个资源:employee->employee_role->role->role_resource->resource
+				public List<String> findResourceMethodByLogin(Long loginUserId) {
+					//hql join:不写on子句,join后面的对象是通过前面对象的别名.出来
+					String hql = "select distinct res.method from Employee e join e.roles r join r.resources res where e.id=?";
+					return findByHql(hql, loginUserId);
+				}	
+			  		
+  1.2 在AuthInterceptor中
+  		
+  		@Override
+	public String intercept(ActionInvocation invocation) throws Exception {
+		
+		Object action = invocation.getAction();
+		System.out.println("AuthInterceptor:"+action);
+		//1.排除一些不能拦截的LoginActin,验证码Action
+		if(action instanceof LoginAction){
+			return invocation.invoke();  // 进入下一个拦截器
+		}
+		
+		//2.拦截登录 :  获取session
+		//Employee employee = (Employee)ServletActionContext.getRequest().getSession().getAttribute(BaseAction.LOGIN_IN_SESSION);
+		Employee employee = (Employee) invocation.getInvocationContext().getSession().get(BaseAction.LOGIN_IN_SESSION);
+		if(employee == null){
+			// <global-results>
+			//       <result name="login">/WEB-INF/pages/login.jsp</result>
+		    // </global-results>
+			return Action.LOGIN;  //跳转到登陆
+		}
+		
+		//3.拦截权限
+		//问题1:哪些action的方法要拦截:在资源管理的方法出现的就要拦截
+		List<String> allResourceMethods = employeeService.getAllResourceMethods();
+		String className = action.getClass().getName();
+		String classNameALL = className + ".ALL";
+		System.out.println("classNameALL:" + classNameALL);
+		if(allResourceMethods.contains(classNameALL)){
+			System.out.println("需要拦截"); 
+			// 问题2:怎样处理需要拦截的action的方法:看当前登录的用户是否具有这个资源
+			List<String> list  = employeeService.findResourceMethodByLogin(employee.getId());
+			if(list.contains(classNameALL)){
+				System.out.println("有权访问");
+			}else{
+				System.out.println("无权访问");
+				System.out.println("没有权限访问 ");
+				// <global-results>
+				// <result name="auth">/WEB-INF/pages/auth.jsp</result>
+				// </global-results>
+				return "auth";
+			}
+		}else{
+			System.out.println("不需要拦截");
+		}
+		
+		return invocation.invoke();  // 进入下一个拦截器
+	}
+  		  		
+  1.3  select b.address from a（表名）left join b(表名)  on a.no = b.no where (你要查询的条件)
+  
+  1.4测试类 ： EmployeeServiceTest.java
+  		@Test
+  		public void QueryTest(){
+  			//1.测试查询所有资源方法
+  			List<String> allMethods =	employeeService.getAllResourceMethods();
+			System.out.println(allMethods);
+			//select resource4_.method as col_0_0_ from Employee employee0_
+			// inner join employee_role roles1_ on employee0_.id=roles1_.employe_id 
+			// inner join Role role2_ on roles1_.role_id=role2_.id 
+			// inner join role_resource resources3_ on role2_.id=resources3_.role_id 
+			// inner join Resource resource4_ on resources3_.resource_id=resource4_.id
+			// where employee0_.id=?
+			//2.测试登陆用户拥有的资源方法
+		   List<String> list = employeeService.findResourceMethodByLogin(2L);
+		   for(String rString : list){
+			   System.out.println(rString);
+		   }
+  		}	
+  		
+二.修改密码
+   1.<a href="updatePassword.action" targer="main"></a> 跳转到修改密码页面
+   2.在updatePassword.jsp页面添加验证框架
+   3. updatePassword.java
+	   / 显示修改密码页面
+		@Override
+		public String execute() throws Exception {
+			return SUCCESS;
+		}
+	
+		// 处理修改密码的请求
+		public String update() {
+			//先判断旧密码必须输入正确
+			Employee employee = (Employee)ServletActionContext.getRequest().getSession().getAttribute(LOGIN_IN_SESSION);
+			System.out.println(employee.getPassword().equals(oldPassword));
+			if(!employee.getPassword().equals(oldPassword)){
+				addActionError("旧密码输入错误");
+				return SUCCESS;  //跳转到修改密码页面
+			}
+			employee.setPassword(newPassword);
+			employeeService.update(employee);
+			//将session移除
+			ServletActionContext.getRequest().getSession().removeAttribute(LOGIN_IN_SESSION);
+			return LOGIN; //修改成功则跳转到登陆页面，重新登陆
+		}		
+ 		
+   4.Struts2.xml
+    	<!--修改密码  -->
+		<action name="updatePassword_*" class="updatePasswordAction" method="{1}">
+			<!-- name默认为success  -->	
+			<result>/WEB-INF/pages/updatePassword.jsp</result>
+		</action>
+				
+   5.扩展验证框架：//扩展的部分:新密码不能与旧密码相同
+		equalNotTo: function(value, element, param) {
+			// bind to the blur event of the target in order to revalidate whenever the target field is updated
+			// TODO find a way to bind the event just once, avoiding the unbind-rebind overhead
+			var target = $(param).unbind(".validate-equalNotTo").bind("blur.validate-equalTo", function() {
+				$(element).valid();
+			});
+			return value != target.val();
+		}
+  			
+  	6. 基本功能完成后，解决跳转页面不能为全部的登陆页面
+  		<script type="text/javascript">
+			//密码修改成功后，跳转到登陆页，保证为全页面
+			if(top != window){
+				top.location.href = window.location.href;
+			}
+		</script>	
+	
+	
+		

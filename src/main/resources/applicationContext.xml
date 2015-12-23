@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="
+				http://www.springframework.org/schema/beans
+		 		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+				http://www.springframework.org/schema/context
+				http://www.springframework.org/schema/context/spring-context-3.2.xsd
+				http://www.springframework.org/schema/tx
+				http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+				http://www.springframework.org/schema/aop
+				http://www.springframework.org/schema/aop/spring-aop-3.2.xsd"
+				>
+		
+	<!--扫描此包下的文件 -->
+	<context:component-scan base-package="com.hd.pss"></context:component-scan>		
+	<!--获取jdbc.properties属性  -->
+	<context:property-placeholder location="classpath:jdbc.properties"/>
+	<!-- ===============================1.配置数据源(dataSource)======================================= -->
+	 <!-- dbcp连接池 -->	
+	 <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+	 	<property name="driverClassName"  value="${jdbc.driverClassName}" />
+	 	<property name="url"  value="${jdbc.url}" />
+	 	<property name="username"  value="${jdbc.username}" />
+	 	<property name="password"  value="${jdbc.password}" />
+	 	<property name="initialSize"  value="${jdbc.initialSize}" />
+	 </bean>
+	 <!-- 使用的是tomcat服务器提供的连接池 -->
+	 <!-- <jee:jndi-lookup id="dataSource" jndi-name="java:comp/envbc/petclinic"/> -->
+	 <!-- ===============================2.配置Hibernate的SessionFactory======================================= -->
+	<!-- Hibernate SessionFactory:去掉 String[] P:mappingResources = "petclinic.hbm.xml" -->
+	 <bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+			 <property name="dataSource" ref="dataSource"> </property> <!--注入数据源  -->
+			 <!-- 设置hibernate属性-->
+			 <property name="hibernateProperties">
+		 		<!-- <value>
+		 			hibernate.show_sql=true
+					hibernate.hbm2ddl.auto=update
+					hibernate.dialect=org.hibernate.dialect.MySQLDialect
+		 		</value> -->
+		 		<props>
+		 			<prop key="hibernate.dialect">${hibernate.dialect}</prop>
+		 			<prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+		 			<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>
+		 		</props>
+	 		 </property>
+	 		 <!-- 加载配置文件Resource[] mappingLocations 1.前面加上classpath 要小写 2.可以使用通配符-->
+	 		 <property name="mappingLocations" value="classpath:com/hd/pss/domain/*.hbm.xml"></property>
+	 </bean>											
+	
+	<!-- ===============================3.配置事务管理======================================= -->
+	<bean id="txManage"  class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+			<property name="sessionFactory" ref="sessionFactory"> </property>
+	</bean> 	
+	 <!--事务增强：环绕通知  -->	
+	 <tx:advice id="curdAdvice"  transaction-manager="txManage">
+	 		<tx:attributes>
+	 				<tx:method name="save*" propagation="REQUIRES_NEW"/>
+	 				<tx:method name="get*"  read-only="true" />
+	 				<tx:method name="find*" read-only="true"/>
+	 				<tx:method name="list*" read-only="true"/>
+	 				<tx:method name="query*" read-only="true"/>
+	 				<!-- 通用 --> 
+	 				<tx:method name="*"  />
+	 		</tx:attributes>
+	 </tx:advice>
+	 <!--切入点配置，在哪里做什么 -->
+	 <aop:config>
+	 		<aop:pointcut expression="execution(* com.hd.pss.service.*Service.*(..))" id="txPoint"/>
+	 		<aop:advisor advice-ref="curdAdvice" pointcut-ref="txPoint"/>
+	 </aop:config>
+	 	
+	<!-- ===============================4.配置导入bean======================================= -->
+	 	
+	<!--现在src/main/resources创建一个文件夹（其实是一个包package），通过通配符引入  通配符的方式没有做成功--> 
+	<import resource="classpath:manager/*Manager.xml" />
+	<!--
+	    <import resource="classpath:manager/CommonManager.xml" />
+		<import resource="classpath:manager/EmployeeManager.xml" />
+		<import resource="classpath:manager/DepartmentManager.xml" /> 
+	-->
+	<!-- 配置dao <bean id="baseDao" class="com.hd.pps.dao.BaseDao"" p:sessionFactory-ref="sessionFactory"/> -->
+	<!-- <bean id="baseDao" class="com.hd.pss.dao.BaseDao">
+		<property name="sessionFactory" ref="sessionFactory"></property> 引入sessionFactory
+	</bean> -->
+
+	<!-- 配置service -->
+	<!-- <bean id="baseService" abstract="true">
+		<property name="baseDao" ref="baseDao"></property>
+	</bean> -->
+	
+	<!-- <bean id="departmentService" class="com.hd.pss.service.Impl.DepartmentServiceImpl"  parent="baseService"/> -->
+	
+	<!--配置Action  -->
+	<!-- <bean id="departmentAction" class="com.hd.pss.view.action.DepartmentAction" scope="prototype">
+		name对应的值表示action中对应的属性值， ref对应引用对象的id 
+		<property name="departmentService"  ref="departmentService" />
+	</bean>	
+	
+	<bean id="employeeService" class="com.hd.pss.service.Impl.EmployeeServiceImpl"  parent="baseService"/>
+	 -->
+	<!--配置Action  -->
+	<!-- <bean id="employeeAction" class="com.hd.pss.view.action.EmployeeAction" scope="prototype">
+		name对应的值表示action中对应的属性值， ref对应引用对象的id 
+		<property name="employeeService"  ref="employeeService" />
+		<property name="departmentService" ref="departmentService"></property>
+	</bean> -->	
+	
+		
+	
+</beans>	
+				

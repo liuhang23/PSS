@@ -1,0 +1,20 @@
+一.采购订单的模型分析
+   1.多对多：	采购单【多】-------【1】供应商
+   		    业务员【1】 ------ 【多】 采购单 	
+   2.涉及model:部门，员工，角色，菜单，资源，采购订单，采购订单明细，供应商，客户，产品，产品类型，数据字典明细，数据字典类型
+   		
+   
+   
+	    (多)采购订单(PurchaseBill): id[Long]  totalAmount[BigDecimel]总金额  totalNum[BigDecimel]总数  status[Integer] 状态
+	    						  vdate[Date]单据发生时间    inputTime[Date] 录入时间   auditorTime[Date] 审核时间
+	    						  List<PurchareBillItem> items 订单明细列表  
+	    	*1个供应商下面有多个采购订单
+	    (1) 供应商(Supplier)   	   :  id[Long]  name[String] 姓名  address[String]地址
+	    	
+	    	*产品1可以再采购订单里面多次出现吗?都可以出现
+	   	采购订单(1)---（n）订单明细(PurchaseBillItem) :id[Long] num[BigDecimal] price[BigDecimal] 价格 Product product[产品] amount[BigDecimal]    desc[Strin] 备注
+	   	订单明细(PurchaseBillItem) (n) ---- (1) 产品(Product)
+	   	
+	   checkBox(多对多)	 BigDecimal[高精度]
+	
+	3.   	

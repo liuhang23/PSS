@@ -1,0 +1,60 @@
+CRUDAction的Preparable与ModelDrivenen接口
+
+
+CRUD的Action全部使用Preparable与ModelDriven接口，两个接口都是CRUD界面必备
+因为只有input() 和 save()两个方法需要二次绑定，而list()等方法并不需要，
+所以根据命名约定实现了prepareInput(),prepareSave()两个方法，
+Struts2会自动在执行input()与save()前执行它们，详见CRUDAction基类.
+
+而非CRUD的action是否使用这两个接口就看具体情况了，一般继承BaseAction
+
+
+
+CRUDAction基类(涉及CRUD时的可选基类):
+规范了CRUD方法的名称，规定使用ModelDriven和Preparedable接口，并规范了prepare二次绑定接口只在input和save方法中的使用
+	  //调用xxx_input.action之前调用
+		public void prepareInput() throws Exception {
+			before();
+		}
+		//调用xxx_save.action之前调用
+		public void prepareSave() throws Exception {
+			before();
+		}	
+		public abstract void before() throws Exception ;
+
+
+
+访问流程如下：
+
+打开员工列表页，访问/employee.action
+a.执行默认的execute() 方法，实际执行list() 方法。
+b.list() 方法查询列表放入某list变量，返回SUCCESS视图，默认跳转到/WEB-INF/pages/employee/employee.jsp
+c.employee.jsp取出action中的list变量进行渲染。 
+
+
+新增员工对象，访问/employee_input.action
+a.执行prepareInput()方法根据id==null,此时会创建一个新的employee变量
+b.然后调用input() 方法，返回INPUT视图，默认跳转到/WEB-INF/pages/employee/employee-input.jsp
+c.employee-input.jsp 执行getModel()获得领域类employee的默认变量渲染input框
+
+
+新增员工提交Form保存，访问/employee_save.action
+a.Form表单里面有个id隐藏框，调用setId方法将id放入id变量，此时id为null
+b.执行preparedSave()方法根据id=null，所以创建一个新的employee变量，将input框的内容绑定到getModel()获得的employee变量
+c.执行save()方法保存employee，返回RELOAD，跳转到RELOAD页面，以redirectAction方式重新打开/employee.action,防止员工刷新重复提交
+
+
+修改员工对象，访问/employee_input.action?id=1
+a.调用setId方法，绑定id=1到id变量，此时id_=null，执行prepareInput()从数据库通过id查询出employee(不知道员工究竟要修改那个字段)。
+b.然后调用input() 方法，返回INPUT视图，默认跳转到/WEB-INF/pages/employee-input.jsp
+c.employee-input.jsp 执行getModel()获得employee变量自动渲染input框 
+ 
+ 
+修改员工后提交Form,访问/employee_save.action
+a.Form表单里面有个id隐藏框，调用setId方法，绑定id=1到id变量
+b.执行preparedSave()方法根据id!=null，先从数据库通过id查询出employee变量(为什么要查询：页面只修改3个字段，数据库共有20个字段，不查询会造成数据丢失)，
+c.通过getModel()将input框的修改内容绑定到获得的employee变量
+d.执行update()方法修改employee，返回RELOAD，跳转到RELOAD页面，以redirectAction方式重新打开/employee.action,防止员工刷新重复提交
+
+
+

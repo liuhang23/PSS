@@ -1,0 +1,134 @@
+一.页面的拆分
+	1.将main.jsp页面分页left.jsp和right.jsp页面，通过<%@import file="导入"%>
+	
+	使用z-tree案例顺序 ： 1. demo/cn/core/asnc.html 
+					    2. demo/cn/core/url.html
+				  	    3. demo/cn/core/custom_icon.html
+二.json插件的使用
+   1.添加2个jar  :  json-lib-2.2.3-jdk15.jar , struts2-json-plugin-2.2.3.jar
+   2.修改struts.xml	
+   	 2.1 struts2-json-plugin-2.2.3.jar ---->struts-plugin.xml
+	   		<package name="json-default" extends="struts2-default">
+	   				<result-types>
+	   						<result-type name="json" class="org.apache.struts2.json">
+	   				</result-types>
+	   		</package>	
+   	
+   	2.2 修改struts.xml : <package name="default" namespace="/" extends="json-default" />	
+   		
+   3.struts.xml	  ： 添加一个返回json字符串 <result name="json" type="json"></result>
+   		<!-- 左侧菜单 -->
+		<action name="left" class="leftAction">
+			<result name="json" type="json">
+				<!-- 使用json的返回类型<result-type name="json" class="org.apache.struts2.json.JSONResult"/> -->
+				<!-- 默认是直接输出当前Action的属性 -->
+				<!-- 通过root参数的配置,告诉JSONResult对象输出对应的对象 ,访问map需要加# -->
+				<param name="root">#menus</param>
+				<!-- 配置空的属性不输出 -->
+				<param name="excludeNullProperties">true</param>
+			</result>
+		</action>
+		
+   4.LeftAction   (源码信息 JSONResult)
+	  //ajax返回一个json数据 ： 返回的字符串null或者NONE
+		@Override
+		public String execute() throws Exception{
+	//		HttpServletResponse response = ServletActionContext.getResponse();
+	//		response.setContentType("text/json;charset=UTF-8");
+	//		PrintWriter out = response.getWriter();
+	//		String json = "{\"id\":200,\"name\":\"系统模块\",\"isParent\":\"true\"}";
+	//		out.print(json);
+			Employee employee = (Employee)ServletActionContext.getRequest().getSession().getAttribute(LOGIN_IN_SESSION);
+			List<Menu> menus = null;
+			//一级菜单
+			if(id == null){
+				menus = menuService.findParentMenusByLogin(employee);
+			}else{
+				//二级菜单
+				menus = menuService.findChildrenMenusByLogin(employee, id);
+			}
+			//把menus转换成json输出
+			putContext("menus", menus);
+			return JSON;
+		}	
+		
+	5. 在Menu.java的get方法上标注注解
+	     @JSON() json插件注解说明
+	     deserialize: boolean ,是否反序列化
+		 format : String  : 格式化 ： 对于日期 yyyy-MM-dd
+		 name = "text": String   原来属性名name,把属性名改成text
+		 serialize: boolean		,是否序列化，false不输出   :将不需要输出的值使用此注解
+	  
+		@JSON(serialize = false)   //不输出
+		public Menu getParent() {
+			return parent;
+		}
+		
+	   //添加额外的输出属性  : 解决页面跳转不能在main页面中显示
+		public Boolean getIsParent(){
+			return this.parent == null;
+		}
+		public String getTarget() {
+			return getIsParent() ? null : "main";
+		}
+			
+	6.解决图标问题 ： 图标可以根据需求更改
+		6.1直接在测试方法中添加图标url
+		   在MenuServiceTest.java中添加
+			menu.setIcon("js/ztree/css/zTreeStyle/img/diy/2.png");
+		
+三.将拼接字符串的方式改为<!-- 配置json格式的输出 -->
+			   
+	 1.拼json的方式
+	 
+	 	    @Override
+			public String delete() throws Exception {
+				logger.debug("delete");
+				HttpServletResponse response = ServletActionContext.getResponse();
+				response.setContentType("text/json;charset=UTF-8");
+				PrintWriter out = response.getWriter();
+				try {
+					if (id != null) {
+						employeeService.delete(id);
+						out.print("{\"success\":true,\"msg\":\"删除成功\"}");
+						// addActionMessage("删除成功!"); 不能,ajax删除不能通过addActionMessage方法消息
+					} else {
+						out.print("{\"success\":false,\"msg\":\"不能获取id的值\"}");
+					}
+				} catch (Exception e) {
+					out.print("{\"success\":false,\"msg\":\"" + e.getMessage() + "\"}");
+				}
+				return null;
+			}		   	
+			
+	2.改为使用json插件的方式
+		// ajax删除
+		@Override
+		public String delete() throws Exception {
+			logger.debug("delete");
+			Map<String, Object> map = new HashMap<String, Object>();
+			try {
+				if (id != null) {
+					employeeService.delete(id);
+					map.put("success", true);
+					map.put("msg", "删除成功");
+				} else {
+					map.put("success", false);
+					map.put("msg", "不能获取到id的值");
+				}
+			} catch (Exception e) {
+				map.put("success", false);
+				map.put("msg", e.getMessage());
+			}
+			putContext("map", map);
+			return JSON;
+		}
+	3.配置struts.xml
+	<result name="json" type="json">
+		<param name="root">#map</param>
+		<!-- 配置空的属性不输出 -->
+		<param name="excludeNullProperties">map</param>
+    </result>
+	
+			
+				

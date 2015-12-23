@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="com.hd.pss.domain">
+    <class name="Product" >
+    	<id name="id">
+			<generator class="native"></generator>
+		</id>
+		<property name="name"></property>
+		<property name="color"></property>
+		<property name="costPrice"></property>
+		<property name="salePrice"></property>
+		
+		<!-- ProductType types;   // 产品类型 单向多对一 -->
+		<many-to-one name="types" column="types_id" not-null="true"  />
+		<!-- SystemDictionaryDetail brand;  // 产品品牌 单向多对一 -->
+		<many-to-one name="brand" column="brand_id" not-null="true" />
+		<!-- SystemDictionaryDetail unit;   // 产品单位 单向多对一 -->
+		<many-to-one name="unit" column="unit_id" not-null="true" />
+		
+    </class>
+</hibernate-mapping>

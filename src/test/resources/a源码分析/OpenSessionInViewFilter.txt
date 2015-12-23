@@ -1,0 +1,21 @@
+1.注意点 ：使用xml配置的方式注入时，每次注入的对象需要在xml进行配置
+
+2.Spring中有现成的OpenSessionInViewFilter对Session开关进行控制
+  OpenSessionInView(OSIV  : 在客户端请求开启Session,在响应关闭Session)
+  web.xml
+	    <!-- 3.在视图层打开Session (请求开启Session,响应结束关闭Session)-->
+		<filter>
+			<filter-name>OpenSessionInViewFilter</filter-name>
+			<filter-class>org.springframework.orm.hibernate3.support.OpenSessionInViewFilter</filter-class>
+		</filter>
+		<filter-mapping>
+			<filter-name>OpenSessionInViewFilter</filter-name>
+			<!--配置为 /* 方式 : xxxAction,css,js,gif  等文件都会进,会影响效率  -->
+			<!-- <url-pattern>/*</url-pattern>	 -->
+			<!--配置为只针对xxxAction -->
+			<url-pattern>*.action</url-pattern>
+		</filter-mapping>
+ 
+ 3.在Service层开启和关闭事务 
+  	
+

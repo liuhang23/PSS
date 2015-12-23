@@ -1,0 +1,24 @@
+1，写注释
+格式为：？属性，表达的是本对象与 ？的  ？ 关系
+例：“department属性，本对象与Department的多对一”
+
+2，拷模板：
+     多对一 :        <many-to-one  name =“ “  class=“ “  column=“ “ />
+     一对多(set) : <set>
+                                   <key colunm=“”> </key>
+                                   <one-to-many  class=“ ">
+                         </set>
+     多对多(set) : <set>
+                                   <key colunm=“”> </key>
+                                   <many-to-many  class=“ “  column=“ ">
+                         </set>
+3，填空：
+name属性：属性名（注释中的第1问号）
+class属性：关联的实体类型（注释中的第2个问号）
+column属性：
+<many-to-one column="..">：一般可以写成属性名加Id后缀，如属性为department，则column值写成departmentId。
+一对多中的<key column="..">：从关联的对方（对方是多对一）映射中把column值拷贝过来。
+多对多中的<key column=“..”>：一般可以写成本对象的名加Id后缀，如本对象名为User，则写为userId。
+多对多中的<many-to-many column=“..”>：一般可以写为关联对象的名称加Id后缀。
+完成
+
